@@ -84,3 +84,6 @@ newtype Rand = MkRand {getRand :: InfiniteList ZeroOne}
 instance Show Rand where show = show . getRand
 
 pattern Rand xs <- (map getZeroOne . getInfiniteList . getRand -> xs)
+
+
+

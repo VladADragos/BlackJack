@@ -13,14 +13,14 @@ hand3 = [Card Queen Spades,Card King Spades,Card Ace Spades,Card Ace Spades]
 
 
 
--- sizeSteps :: [Int]
--- sizeSteps = [ size hand2
---              , size (Card (Numeric 2) Hearts : (Card Jack Spades : []))
---              , 1 + size (Card Jack Spades : [] )
---              , 1 + 1 + size []
---              , 1 + 1 + 0
---              , 2
---              ]
+sizeSteps :: [Int]
+sizeSteps = [ size hand2
+             , size (Card (Numeric 2) Hearts : (Card Jack Spades : []))
+             , 1 + size (Card Jack Spades : [] )
+             , 1 + 1 + size []
+             , 1 + 1 + 0
+             , 2
+             ]
 
 
 myCard = Card (Numeric 9) Spades
@@ -74,6 +74,8 @@ winner hand1 hand2
 
 
 
+-- B1
+
 allPossibleRanks = [Numeric x| x<-[2..10]] ++ [Ace,Queen,Jack,King]
 allPossibleSuits = [Hearts,Spades,Diamonds,Clubs]
 
@@ -84,21 +86,12 @@ fullDeck = [ Card r s | s<-allPossibleSuits,r<-allPossibleRanks]
 prop_size_fullDeck :: Bool
 prop_size_fullDeck = size fullDeck == 52
 
-draw :: Deck -> Hand -> (Deck, Hand)
-draw [] hand = error "draw: The deck is empty."
-draw deck hand = (drop 1 deck,take 1 deck ++ hand )
+-- B2
+draw :: Deck -> Hand -> (Deck,Hand)
+draw [] _ = error "draw: The deck is empty"
+draw (card:cards) hand = (cards, card : hand)
 
-
--- the bank plays. The bank draws cards until its score is 16 or higher, and then it stops.
-
--- The value of a hand (the score) is the sum of the values of the cards. The values are as follows:
-
--- To write this function you will probably need to introduce a helper function that takes the deck and the bank’s hand as input. To draw a card from the deck you can use where in the following way:
-
-
--- playBank :: Deck -> Hand
--- playBank
-
+-- B3
 
 playBank :: Deck -> Hand
 playBank deck = playBank' deck []
@@ -110,6 +103,55 @@ playBank' deck bankHand
     where (deck', bankHand') = draw deck bankHand
 
 
-shuffle :: [Double] -> Deck -> [Double]
-shuffle [float] cards  = [float]
+
+-- B4
+shuffle :: [Double] -> Deck -> Deck
+shuffle r deck = shuffle' r deck []
+
+shuffle' :: [Double] -> Deck -> Deck -> Deck
+shuffle' _      []   newDeck = newDeck
+shuffle' (float:floats) deck newDeck = 
+    shuffle' floats
+             (removeCardInDeck (pos float deck) deck)
+             ((getCardInDeck (pos float deck) deck) : newDeck)
+  where
+    pos float list = round (float * (fromIntegral(length list) - 1))
+
+
+-- B5
+belongsTo :: Card -> Deck -> Bool
+card `belongsTo` []      = False
+card `belongsTo` (card':decj) = card == card' || card `belongsTo` deck
+
+prop_shuffle :: Card -> Deck -> Rand -> Bool
+prop_shuffle card deck (Rand randomlist) =
+    card `belongsTo` deck == card `belongsTo` shuffle randomlist deck
+
+prop_size_shuffle :: Rand -> Deck -> Bool
+prop_size_shuffle (Rand randomlist) deck = 
+    length (shuffle randomlist deck) == length deck
+
+getCardInDeck :: Int -> Deck -> Card
+getCardInDeck n [] = error "getCardInDeck: List is empty"
+getCardInDeck n list = list !! n
+
+removeCardInDeck :: Int -> Deck -> Deck
+removeCardInDeck _ [] = []
+removeCardInDeck n (x:xs) | n == 0 = xs
+                   | otherwise = x : removeCardInDeck (n-1) xs
+
+
+-- B6
+implementation = Interface
+    {  iFullDeck  = fullDeck
+    ,  iValue     = value
+    ,  iDisplay   = display
+    ,  iGameOver  = gameOver
+    ,  iWinner    = winner
+    ,  iDraw      = draw
+    ,  iPlayBank  = playBank
+    ,  iShuffle   = shuffle
+    }
+main :: IO ()
+main = runGame implementation
 
